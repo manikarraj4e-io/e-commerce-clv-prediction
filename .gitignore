@@ -1,0 +1,4 @@
+venv/
+__pycache__/
+.streamlit/
+online_retail_II.csv
