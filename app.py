@@ -58,24 +58,24 @@ def load_and_train_model():
 
     df = None
 
-    # Option 1: Try reading local CSV
+    # Option 1: Try reading local CSV if present
     if os.path.exists(local_csv_path):
         try:
             df = pd.read_csv(local_csv_path, encoding='latin1')
         except Exception:
             df = None
 
-    # Option 2: Fallback to official online source if missing locally
+    # Option 2: Fallback to direct raw CSV dataset online
     if df is None:
         try:
-            st.info("⏬ Local dataset 'online_retail_II.csv' not found. Fetching fallback dataset from UCI repository...")
-            fallback_url = "https://archive.ics.uci.edu/static/public/502/online+retail+ii.zip"
-            df = pd.read_csv(fallback_url, compression='zip', encoding='latin1')
+            st.info("⏬ Local dataset 'online_retail_II.csv' not found. Fetching clean online dataset stream...")
+            fallback_url = "https://raw.githubusercontent.com/guipsamora/pandas_exercises/master/07_Visualization/Online_Retail/Online_Retail.csv"
+            df = pd.read_csv(fallback_url, encoding='latin1')
         except Exception as e:
-            st.error(f"❌ Failed to load dataset from local path and fallback URL. Error details: {e}")
+            st.error(f"❌ Failed to load dataset. Error details: {e}")
             st.stop()
-            
-    # Standardize Column Names across potential dataset formats
+
+    # Standardize column names across dataset variants
     col_rename = {
         'Customer ID': 'Customer ID',
         'CustomerID': 'Customer ID',
