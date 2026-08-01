@@ -3,6 +3,7 @@ import pandas as pd
 import numpy as np
 import xgboost as xgb
 import plotly.express as px
+import plotly.graph_objects as go
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import mean_squared_error, r2_score
 
@@ -17,27 +18,22 @@ st.set_page_config(
 # --- PROFESSIONAL UI STYLING (DARK SIDEBAR & CLEAN MAIN) ---
 st.markdown("""
     <style>
-    /* Main body background */
     .main {
         background-color: #f8fafc;
     }
-    /* Sidebar background and styling */
     [data-testid="stSidebar"] {
-        background-color: #0f172a !important; /* Deep dark slate */
+        background-color: #0f172a !important;
         color: #f8fafc;
         border-right: 1px solid #1e293b;
     }
-    /* Force sidebar text to be white/light grey */
     [data-testid="stSidebar"] h1, [data-testid="stSidebar"] h2, [data-testid="stSidebar"] h3, 
     [data-testid="stSidebar"] label, [data-testid="stSidebar"] span, [data-testid="stSidebar"] p {
         color: #f8fafc !important;
     }
-    /* Main headers */
     h1, h2, h3 {
         color: #0f172a;
         font-family: 'Inter', sans-serif;
     }
-    /* Custom metric styling cards */
     div[data-testid="stMetric"] {
         background-color: #1e293b !important;
         padding: 15px;
@@ -48,7 +44,7 @@ st.markdown("""
         color: #94a3b8 !important;
     }
     div[data-testid="stMetricValue"] div {
-        color: #38bdf8 !important; /* Bright cyan for metrics */
+        color: #38bdf8 !important;
     }
     </style>
 """, unsafe_allow_html=True)
@@ -106,17 +102,20 @@ def load_and_train_model():
     rmse = np.sqrt(mean_squared_error(y_test, y_pred))
     r2 = r2_score(y_test, y_pred)
     
-    return model, rmse, r2, model_df, feature_cols
+    # Package test results for evaluation plots
+    eval_df = pd.DataFrame({'Actual': y_test, 'Predicted': y_pred})
+    
+    return model, rmse, r2, model_df, feature_cols, eval_df
 
-with st.spinner("Training XGBoost model & compiling dashboard..."):
-    model, rmse, r2, model_df, feature_cols = load_and_train_model()
+with st.spinner("Training XGBoost model & compiling professional dashboard..."):
+    model, rmse, r2, model_df, feature_cols, eval_df = load_and_train_model()
 
 # --- HEADER SECTION ---
 st.title("Customer Lifetime Value Command Center")
 st.markdown("Financial forecasting dashboard for strategic e-commerce marketing decisions.")
 st.markdown("---")
 
-# --- SIDEBAR (Dark Styled) ---
+# --- SIDEBAR ---
 st.sidebar.title("📊 Global Metrics")
 st.sidebar.metric(label="Model R² Score", value=f"{r2:.2f}")
 st.sidebar.metric(label="RMSE", value=f"{rmse:,.0f}")
@@ -130,12 +129,13 @@ st.sidebar.info("Model trained on historical transaction logs to predict 5-year 
 
 # --- VIEW 1: EXECUTIVE OVERVIEW ---
 if app_mode == "Executive Overview":
-    st.subheader("Model Performance & Data Insights")
+    st.subheader("Enterprise Model Performance & Insights")
     
+    # ROW 1: Feature Importance & Future Revenue Distribution
     col1, col2 = st.columns(2)
     
     with col1:
-        st.markdown("### Key Drivers of Future Value")
+        st.markdown("### 1. Key Drivers of Future Value")
         st.write("Behavioral features from the first 3 purchases ranked by importance.")
         
         importance = model.get_booster().get_score(importance_type='weight')
@@ -158,19 +158,60 @@ if app_mode == "Executive Overview":
         fig_importance = px.bar(importance_df, x='Importance', y='Feature', orientation='h',
                                 color='Importance', color_continuous_scale=px.colors.sequential.Tealgrn,
                                 template='plotly_white')
-        fig_importance.update_layout(xaxis_title="Feature Importance Score", yaxis_title="", margin=dict(l=10, r=10, t=10, b=10), height=400)
+        fig_importance.update_layout(xaxis_title="Feature Importance Score", yaxis_title="", margin=dict(l=10, r=10, t=10, b=10), height=380)
         st.plotly_chart(fig_importance, use_container_width=True)
 
     with col2:
-        st.markdown("### Future Revenue Distribution")
+        st.markdown("### 2. Future Revenue Distribution")
         st.write("Customer spend concentration across the historical dataset (Log Scale).")
         
         fig_hist = px.histogram(model_df[model_df['Future_Spend'] > 0], x='Future_Spend', 
                                 nbins=50, log_x=True, 
                                 color_discrete_sequence=['#3b82f6'],
                                 template='plotly_white')
-        fig_hist.update_layout(xaxis_title="Future Spend ($ - Log Scale)", yaxis_title="Customer Count", margin=dict(l=10, r=10, t=10, b=10), height=400)
+        fig_hist.update_layout(xaxis_title="Future Spend ($ - Log Scale)", yaxis_title="Customer Count", margin=dict(l=10, r=10, t=10, b=10), height=380)
         st.plotly_chart(fig_hist, use_container_width=True)
+
+    st.markdown("---")
+
+    # ROW 2: Actual vs Predicted Performance & Customer Segmentation Donut Chart
+    col3, col4 = st.columns(2)
+
+    with col3:
+        st.markdown("### 3. Actual vs. Predicted Performance")
+        st.write("Evaluating model accuracy on test holdout data (Sampled).")
+        
+        sample_eval = eval_df.sample(min(400, len(eval_df)))
+        fig_scatter = px.scatter(sample_eval, x='Actual', y='Predicted', opacity=0.5,
+                                 template='plotly_white', trendline="ols")
+        
+        # Add diagonal perfect-fit line
+        max_val = max(sample_eval['Actual'].max(), sample_eval['Predicted'].max())
+        fig_scatter.add_shape(type="line", x0=0, y0=0, x1=max_val, y1=max_val,
+                              line=dict(dash="dash", color="red", width=2))
+        fig_scatter.update_layout(xaxis_title="Actual Future Spend ($)", yaxis_title="Predicted Spend ($)", 
+                                  margin=dict(l=10, r=10, t=10, b=10), height=380)
+        st.plotly_chart(fig_scatter, use_container_width=True)
+
+    with col4:
+        st.markdown("### 4. Customer Segmentation Breakdown")
+        st.write("Proportion of customer base categorized by predicted value tiers.")
+        
+        # Categorize customer future spend into tiers
+        def categorize_tier(val):
+            if val > 3000: return "High-Value VIP (> $3k)"
+            elif val > 500: return "Standard Buyer ($500 - $3k)"
+            else: return "Low Value (< $500)"
+            
+        model_df['Tier'] = model_df['Future_Spend'].apply(categorize_tier)
+        tier_counts = model_df['Tier'].value_counts().reset_index()
+        tier_counts.columns = ['Tier', 'Count']
+        
+        fig_donut = px.pie(tier_counts, names='Tier', values='Count', hole=0.5,
+                           color_discrete_sequence=px.colors.sequential.Sunset,
+                           template='plotly_white')
+        fig_donut.update_layout(margin=dict(l=10, r=10, t=10, b=10), height=380, legend=dict(orientation="h", y=-0.2))
+        st.plotly_chart(fig_donut, use_container_width=True)
 
 # --- VIEW 2: CUSTOMER SIMULATOR ---
 elif app_mode == "Customer Simulator":
