@@ -211,7 +211,7 @@ if app_mode == "Executive Overview":
         
         sample_eval = eval_df.sample(min(400, len(eval_df)))
         fig_scatter = px.scatter(sample_eval, x='Actual', y='Predicted', opacity=0.5,
-                                 template='plotly_white', trendline="ols")
+                         template='plotly_white')
         
         max_val = max(sample_eval['Actual'].max(), sample_eval['Predicted'].max())
         fig_scatter.add_shape(type="line", x0=0, y0=0, x1=max_val, y1=max_val,
