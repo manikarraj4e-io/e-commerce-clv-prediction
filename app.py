@@ -70,7 +70,8 @@ def load_and_train_model():
         try:
             st.info("⏬ Local dataset 'online_retail_II.csv' not found. Fetching clean online dataset stream...")
             fallback_url = "https://raw.githubusercontent.com/guipsamora/pandas_exercises/master/07_Visualization/Online_Retail/Online_Retail.csv"
-            df = pd.read_csv(fallback_url, encoding='latin1')
+            # LINE 59: Added nrows=100000 for fast cloud execution & memory optimization
+            df = pd.read_csv(fallback_url, encoding='latin1', nrows=100000)
         except Exception as e:
             st.error(f"❌ Failed to load dataset. Error details: {e}")
             st.stop()
@@ -211,7 +212,7 @@ if app_mode == "Executive Overview":
         
         sample_eval = eval_df.sample(min(400, len(eval_df)))
         fig_scatter = px.scatter(sample_eval, x='Actual', y='Predicted', opacity=0.5,
-                         template='plotly_white')
+                                 template='plotly_white')
         
         max_val = max(sample_eval['Actual'].max(), sample_eval['Predicted'].max())
         fig_scatter.add_shape(type="line", x0=0, y0=0, x1=max_val, y1=max_val,
