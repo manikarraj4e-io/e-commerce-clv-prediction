@@ -1,3 +1,4 @@
+import os
 import streamlit as st
 import pandas as pd
 import numpy as np
@@ -52,12 +53,42 @@ st.markdown("""
 # --- DATA LOADING & MODEL TRAINING (Cached) ---
 @st.cache_data
 def load_and_train_model():
-    try:
-        df = pd.read_csv('online_retail_II.csv', encoding='latin1')
-    except FileNotFoundError:
-        st.error("❌ Dataset not found. Please ensure 'online_retail_II.csv' is in your project folder.")
-        st.stop()
-        
+    base_dir = os.path.dirname(os.path.abspath(__file__))
+    local_csv_path = os.path.join(base_dir, "online_retail_II.csv")
+
+    df = None
+
+    # Option 1: Try reading local CSV
+    if os.path.exists(local_csv_path):
+        try:
+            df = pd.read_csv(local_csv_path, encoding='latin1')
+        except Exception:
+            df = None
+
+    # Option 2: Fallback to official online source if missing locally
+    if df is None:
+        try:
+            st.info("⏬ Local dataset 'online_retail_II.csv' not found. Fetching fallback dataset from UCI repository...")
+            fallback_url = "https://archive.ics.uci.edu/static/public/502/online+retail+ii.zip"
+            df = pd.read_csv(fallback_url, compression='zip', encoding='latin1')
+        except Exception as e:
+            st.error(f"❌ Failed to load dataset from local path and fallback URL. Error details: {e}")
+            st.stop()
+            
+    # Standardize Column Names across potential dataset formats
+    col_rename = {
+        'Customer ID': 'Customer ID',
+        'CustomerID': 'Customer ID',
+        'Invoice': 'Invoice',
+        'InvoiceNo': 'Invoice',
+        'InvoiceDate': 'InvoiceDate',
+        'Quantity': 'Quantity',
+        'Price': 'Price',
+        'UnitPrice': 'Price',
+        'StockCode': 'StockCode'
+    }
+    df = df.rename(columns=col_rename)
+
     df = df.dropna(subset=['Customer ID'])
     df = df[~df['Invoice'].astype(str).str.startswith('C')]
     df['TotalPrice'] = df['Quantity'] * df['Price']
@@ -102,7 +133,6 @@ def load_and_train_model():
     rmse = np.sqrt(mean_squared_error(y_test, y_pred))
     r2 = r2_score(y_test, y_pred)
     
-    # Package test results for evaluation plots
     eval_df = pd.DataFrame({'Actual': y_test, 'Predicted': y_pred})
     
     return model, rmse, r2, model_df, feature_cols, eval_df
@@ -131,7 +161,6 @@ st.sidebar.info("Model trained on historical transaction logs to predict 5-year 
 if app_mode == "Executive Overview":
     st.subheader("Enterprise Model Performance & Insights")
     
-    # ROW 1: Feature Importance & Future Revenue Distribution
     col1, col2 = st.columns(2)
     
     with col1:
@@ -174,7 +203,6 @@ if app_mode == "Executive Overview":
 
     st.markdown("---")
 
-    # ROW 2: Actual vs Predicted Performance & Customer Segmentation Donut Chart
     col3, col4 = st.columns(2)
 
     with col3:
@@ -185,7 +213,6 @@ if app_mode == "Executive Overview":
         fig_scatter = px.scatter(sample_eval, x='Actual', y='Predicted', opacity=0.5,
                                  template='plotly_white', trendline="ols")
         
-        # Add diagonal perfect-fit line
         max_val = max(sample_eval['Actual'].max(), sample_eval['Predicted'].max())
         fig_scatter.add_shape(type="line", x0=0, y0=0, x1=max_val, y1=max_val,
                               line=dict(dash="dash", color="red", width=2))
@@ -197,7 +224,6 @@ if app_mode == "Executive Overview":
         st.markdown("### 4. Customer Segmentation Breakdown")
         st.write("Proportion of customer base categorized by predicted value tiers.")
         
-        # Categorize customer future spend into tiers
         def categorize_tier(val):
             if val > 3000: return "High-Value VIP (> $3k)"
             elif val > 500: return "Standard Buyer ($500 - $3k)"
