@@ -102,7 +102,8 @@ Allows growth marketers and finance leaders to input customer transactional para
 
 ### Installation Steps
 
-1. **Clone Repository:**
-   ```bash
-   git clone [https://github.com/manikarraj-cmd/e-commerce-clv-prediction.git](https://github.com/manikarraj-cmd/e-commerce-clv-prediction.git)
-   cd e-commerce-clv-prediction
+```bash
+git clone https://github.com/manikarraj4e-io/e-commerce-clv-prediction.git
+cd e-commerce-clv-prediction
+pip install -r requirements.txt
+streamlit run app.py
