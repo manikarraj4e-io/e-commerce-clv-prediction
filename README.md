@@ -103,7 +103,7 @@ Allows growth marketers and finance leaders to input customer transactional para
 ### Installation Steps
 
 ```bash
-git clone https://github.com/manikarraj4e-io/e-commerce-clv-prediction.git
+git clone https://github.com/Emmanuelrajj4e/e-commerce-clv-prediction.git
 cd e-commerce-clv-prediction
 pip install -r requirements.txt
 streamlit run app.py
